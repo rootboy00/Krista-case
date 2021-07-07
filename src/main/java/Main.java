@@ -8,12 +8,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.sql.*;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.sql.Date;
 import java.util.List;
 import java.util.Scanner;
-import java.sql.Connection;
 
 
 public class Main {
@@ -25,52 +22,37 @@ public class Main {
         Scanner in = new Scanner(System.in);
         System.out.println("Enter the path where the XML documents are located");
         String fileName = in.next();
-        if(fileName.equals("1"))  fileName = "plants__000.xml";
+        if (fileName.equals("1")) fileName = "plants__000.xml";
         System.out.println(fileName);
-
         XMLParse(fileName);
-
-        //Class.forName("com.mysql.cj.jdbc.Driver");
-
-
     }
 
-
-
-    public static void SQL_Connect(){
+    public static void SQL_Connect() {
         try {
-            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/db_test","root","vertrigo");
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/db_test", "root", "vertrigo");
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
-
         try {
             statement = con.createStatement();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
-            //statement.executeUpdate("INSERT INTO `d_cat_catalog` (`id`, `UUID`, `COMPANY`, `DELIVERY_DATE`) VALUES (NULL, 'agsadhgsadh', 'agtasgasg', '2021-07-14 00:00:00')");
     }
 
 
-
     public static void XMLParse(String fileName) throws SQLException, ParseException {
-
         Catalog catalog = new Catalog();
         Document doc;
         try {
             doc = buildDocument(fileName);
         } catch (Exception e) {
-            System.out.println("Open parsing Error " + e.toString());
+            System.out.println("Open parsing Error " + e);
             return;
         }
-
-
         Node rootNode = doc.getFirstChild();
         NodeList rootChilds = rootNode.getChildNodes();
         Node plantnode = null;
-
-
         List<Plant> plantlist = new ArrayList<>();
         NodeList ChildNode = null;
         for (int i = 0; i < rootChilds.getLength(); i++) {
@@ -89,7 +71,6 @@ public class Main {
                 if (ChildNode.item(j).getNodeType() != Node.ELEMENT_NODE) {
                     continue;
                 }
-
                 switch (ChildNode.item(j).getNodeName()) {
                     case "COMMON": {
                         common = ChildNode.item(j).getTextContent();
@@ -100,7 +81,6 @@ public class Main {
                         break;
                     }
                     case "ZONE": {
-
                         Integer tmp_zone;
                         try {
                             switch (ChildNode.item(j).getTextContent()) {
@@ -149,52 +129,45 @@ public class Main {
             Plant plant = new Plant(common, botanical, zone, light, price, availability);
             plantlist.add(plant);
         }
-
         catalog.setPlant(plantlist);
         catalog.setUuid(rootNode.getAttributes().getNamedItem("uuid").getNodeValue());
-        catalog.setDate(rootNode.getAttributes().getNamedItem("date").getNodeValue().toString());
-
+        catalog.setDate(rootNode.getAttributes().getNamedItem("date").getNodeValue());
         catalog.setCompany(rootNode.getAttributes().getNamedItem("company").getNodeValue());
         catalog.setPlant(plantlist);
-        System.out.println("Root " + catalog.toString());
+        System.out.println("Root " + catalog);
         ToSql(catalog);
-
     }
-
 
     private static void ToSql(Catalog catalog) throws SQLException {
         String UUID = catalog.getUuid();
         Integer ID = 0;
-        while(ID == 0) {
-            ResultSet resultSet = statement.executeQuery("select id from d_cat_catalog where UUID = '" + UUID.toString() + "'");
-
+        while (ID == 0) {
+            ResultSet resultSet = statement.executeQuery("select id from d_cat_catalog where UUID = '" + UUID + "'");
             if (resultSet.next()) {
                 ID = resultSet.getInt(1);
-            }else{
+            } else {
                 ID = 0;
             }
-
             if (ID == 0) {
                 statement.executeUpdate("INSERT INTO d_cat_catalog(UUID,COMPANY,DELIVERY_DATE) VALUES ( '" + catalog.getUuid() + "','" + catalog.getCompany() + "','" + catalog.getDate() + "' )");
             }
         }
 
-        for(int i =0; i < catalog.getPlant().size(); i++) {
+        for (int i = 0; i < catalog.getPlant().size(); i++) {
             statement.executeUpdate("INSERT INTO f_cat_plantsf_cat_plants(CATALOG_ID,COMMON,BOTANICAL,ZONE,LIGHT,PRICE,AVAILABILITY)" +
-                    "VALUES ('" + ID.toString() + "'," +
-                    "'" + catalog.getPlant().get(i).getCommon().toString() + "'," +
-                    "'" + catalog.getPlant().get(i).getBotanical().toString() + "'," +
+                    "VALUES ('" + ID + "'," +
+                    "'" + catalog.getPlant().get(i).getCommon() + "'," +
+                    "'" + catalog.getPlant().get(i).getBotanical() + "'," +
                     "'" + catalog.getPlant().get(i).getZone().toString() + "'," +
-                    "'" + catalog.getPlant().get(i).getLight().toString() + "'," +
+                    "'" + catalog.getPlant().get(i).getLight() + "'," +
                     "'" + catalog.getPlant().get(i).getPrice() + "', " +
-                    "'" + catalog.getPlant().get(i).getAvailability().toString() + "')");
+                    "'" + catalog.getPlant().get(i).getAvailability() + "')");
         }
-
 
 
     }
 
-    private static Document buildDocument(String fileName) throws  Exception{
+    private static Document buildDocument(String fileName) throws Exception {
         File file = new File(fileName);
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         Document doc = null;
